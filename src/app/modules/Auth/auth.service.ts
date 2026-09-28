@@ -5,7 +5,16 @@ import config from "../../../config";
 import ApiError from "../../../errors/ApiErrors";
 import prisma from "../../../shared/prisma";
 import { jwtHelpers } from "../../../utils/jwtHelpers";
-import { IChangePassword, ILoginResponse, ILoginUser } from "./auth.interface";
+import emailSender from "../../../helpars/emailSender/emailSender";
+import {
+  IChangePassword,
+  IForgotPassword,
+  ILoginResponse,
+  ILoginUser,
+  IResetPassword,
+  IUpdateProfile,
+  IVerifyOtp,
+} from "./auth.interface";
 import { UserStatus } from "@prisma/client";
 
 const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
@@ -52,6 +61,7 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
       email: user.email,
       name: user.name,
       role: user.role,
+      avatar: user.avatar,
     },
   };
 };
@@ -124,6 +134,103 @@ const changePassword = async (userId: string, payload: IChangePassword) => {
   };
 };
 
+const forgotPassword = async (payload: IForgotPassword) => {
+  const user = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No account found with this email!");
+  }
+
+  // Generate 6 digit numeric OTP
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  await prisma.otp.create({
+    data: {
+      email: payload.email,
+      otp: otpCode,
+      expiresAt,
+    },
+  });
+
+  console.log(`🔐 Password Reset OTP for ${payload.email}: ${otpCode}`);
+
+  try {
+    if (config.emailSender.email && config.emailSender.app_pass) {
+      await emailSender(
+        "Password Reset Verification Code",
+        payload.email,
+        `<div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Password Reset Request</h2>
+          <p>Your 6-digit verification code is:</p>
+          <h1 style="color: #FFC800; letter-spacing: 5px;">${otpCode}</h1>
+          <p>This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+        </div>`
+      );
+    }
+  } catch (error) {
+    console.warn("Email sender failed to deliver, but OTP is generated in DB:", error);
+  }
+
+  return {
+    message: "Verification code sent to your email successfully!",
+  };
+};
+
+const verifyOtp = async (payload: IVerifyOtp) => {
+  const validOtp = await prisma.otp.findFirst({
+    where: {
+      email: payload.email,
+      otp: payload.otp,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!validOtp) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid or expired verification code!");
+  }
+
+  return {
+    message: "OTP verified successfully!",
+  };
+};
+
+const resetPassword = async (payload: IResetPassword) => {
+  const validOtp = await prisma.otp.findFirst({
+    where: {
+      email: payload.email,
+      otp: payload.otp,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!validOtp) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid or expired verification code!");
+  }
+
+  const hashedPassword = await bcrypt.hash(payload.newPassword, 12);
+
+  await prisma.user.update({
+    where: { email: payload.email },
+    data: {
+      password: hashedPassword,
+    },
+  });
+
+  // Clean up used OTPs
+  await prisma.otp.deleteMany({
+    where: { email: payload.email },
+  });
+
+  return {
+    message: "Password reset successfully! You can now login with your new password.",
+  };
+};
+
 const getMe = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -134,6 +241,14 @@ const getMe = async (userId: string) => {
       role: true,
       status: true,
       avatar: true,
+      profileType: true,
+      location: true,
+      country: true,
+      region: true,
+      city: true,
+      bio: true,
+      verificationStatus: true,
+      accountStatus: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -146,9 +261,52 @@ const getMe = async (userId: string) => {
   return user;
 };
 
+const updateProfile = async (userId: string, payload: IUpdateProfile) => {
+  if (payload.email) {
+    const existing = await prisma.user.findFirst({
+      where: {
+        email: payload.email,
+        NOT: { id: userId },
+      },
+    });
+    if (existing) {
+      throw new ApiError(httpStatus.CONFLICT, "Email is already taken by another account!");
+    }
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: payload,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      avatar: true,
+      profileType: true,
+      location: true,
+      country: true,
+      region: true,
+      city: true,
+      bio: true,
+      verificationStatus: true,
+      accountStatus: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return updatedUser;
+};
+
 export const AuthService = {
   loginUser,
   refreshToken,
   changePassword,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
   getMe,
+  updateProfile,
 };

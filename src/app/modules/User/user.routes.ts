@@ -27,9 +27,24 @@ router.get("/:id", auth(), UserController.getUserById);
 // Update user
 router.patch(
   "/:id",
-  auth(),
+  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   validateRequest(UserValidation.updateUserValidationSchema),
   UserController.updateUser
+);
+
+// Suspend user
+router.patch(
+  "/:id/suspend",
+  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  validateRequest(UserValidation.suspendUserValidationSchema),
+  UserController.suspendUser
+);
+
+// Reactivate user
+router.patch(
+  "/:id/reactivate",
+  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  UserController.reactivateUser
 );
 
 // Delete user (SUPER_ADMIN, ADMIN only)

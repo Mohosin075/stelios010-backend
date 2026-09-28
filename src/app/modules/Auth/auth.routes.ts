@@ -25,6 +25,31 @@ router.post(
   AuthController.changePassword
 );
 
+router.post(
+  "/forgot-password",
+  validateRequest(AuthValidation.forgotPasswordValidationSchema),
+  AuthController.forgotPassword
+);
+
+router.post(
+  "/verify-otp",
+  validateRequest(AuthValidation.verifyOtpValidationSchema),
+  AuthController.verifyOtp
+);
+
+router.post(
+  "/reset-password",
+  validateRequest(AuthValidation.resetPasswordValidationSchema),
+  AuthController.resetPassword
+);
+
 router.get("/me", auth(), AuthController.getMe);
+
+router.patch(
+  "/profile",
+  auth(),
+  validateRequest(AuthValidation.updateProfileValidationSchema),
+  AuthController.updateProfile
+);
 
 export const AuthRoutes = router;
