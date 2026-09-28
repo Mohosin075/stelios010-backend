@@ -12,13 +12,6 @@ export default {
     image_url: process.env.BACKEND_IMAGE_URL,
   },
 
-  twilio: {
-    authToken: process.env.TWILIO_AUTH_TOKEN,
-    accountSid: process.env.TWILIO_ACCOUNT_SID,
-    phoneNumber: process.env.TWILIO_PHONE_NUMBER,
-    serviceSid: process.env.TWILIO_SERVICE_SID,
-  },
-
   jwt: {
     jwt_secret: process.env.JWT_SECRET,
     expires_in: process.env.EXPIRES_IN,
@@ -34,11 +27,6 @@ export default {
     stripe_publishable_key: process.env.STRIPE_PUBLISHABLE_KEY,
     stripe_client_id: process.env.STRIPE_CLIENT_ID,
     stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
-  },
-  paypal: {
-    client_id: process.env.PAYPAL_CLIENT_ID || process.env.PAYPEL_CLIENT_ID,
-    client_secret: process.env.PAYPAL_CLIENT_SECRET,
-    mode: process.env.PAYPAL_MODE,
   },
   sendGrid: {
     api_key: process.env.SENDGRID_API_KEY,

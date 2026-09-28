@@ -43,7 +43,7 @@ A clean, production-ready backend boilerplate built with **Express.js**, **TypeS
 - 🗑️ **Soft Deletion**: Status-based soft delete flow (`ACTIVE`, `BLOCKED`, `DELETED`) preserving relational integrity.
 - 🚨 **Centralized Error Handling**: Standardized error responses handling Prisma exceptions, Zod errors, and custom `ApiError`.
 - 📦 **File Uploads**: Multer local storage + AWS S3 / DigitalOcean Spaces integration.
-- 💳 **Payment & Messaging Ready**: Pre-wired helpers for Stripe, PayPal, SendGrid, and Nodemailer.
+- 💳 **Payment & Messaging Ready**: Pre-wired helpers for Stripe, SendGrid, and Nodemailer.
 - 🪵 **Logging**: Structured request and system logging with Winston.
 
 ---
