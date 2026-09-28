@@ -12,6 +12,7 @@ export const seedSuperAdmin = async () => {
     });
 
     if (existingSuperAdmin) {
+      console.log(`ℹ️ Super Admin already exists (${superAdminEmail})`);
       return;
     }
 

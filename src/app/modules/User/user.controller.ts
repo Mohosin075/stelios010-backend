@@ -57,6 +57,31 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const suspendUser = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const result = await UserService.suspendUser(id, reason);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User suspended successfully!",
+    data: result,
+  });
+});
+
+const reactivateUser = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await UserService.reactivateUser(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User reactivated successfully!",
+    data: result,
+  });
+});
+
 const deleteUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await UserService.deleteUser(id);
@@ -74,5 +99,7 @@ export const UserController = {
   getAllUsers,
   getUserById,
   updateUser,
+  suspendUser,
+  reactivateUser,
   deleteUser,
 };

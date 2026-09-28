@@ -3,6 +3,15 @@ export const userFilterableFields: string[] = [
   "email",
   "role",
   "status",
+  "profileType",
+  "accountStatus",
+  "verificationStatus",
 ];
 
-export const userSearchableFields: string[] = ["email", "name"];
+export const userSearchableFields: string[] = [
+  "email",
+  "name",
+  "location",
+  "city",
+  "country",
+];

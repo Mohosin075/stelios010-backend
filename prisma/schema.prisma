@@ -7,6 +7,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ----------------------------------------------------
+// ENUMS
+// ----------------------------------------------------
+
 enum UserRole {
   SUPER_ADMIN
   ADMIN
@@ -16,19 +20,451 @@ enum UserRole {
 enum UserStatus {
   ACTIVE
   BLOCKED
+  SUSPENDED
   DELETED
 }
 
+enum ProfileType {
+  ACTIVE_USER
+  FUTURE_USER
+}
+
+enum VerificationStatus {
+  VERIFIED
+  PENDING
+  UNSUCCESSFUL
+  UNVERIFIED
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum LimbCategory {
+  UPPER_LIMB
+  LOWER_LIMB
+}
+
+enum ProductType {
+  BIONIC_HAND
+  BIONIC_KNEE
+  BIONIC_FOOT
+  BIONIC_ELBOW
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ClaimedStatus {
+  CLAIMED
+  UNCLAIMED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  NONE
+  EXPIRED
+  PENDING
+}
+
+enum SubscriptionPlanType {
+  MONTHLY
+  ANNUAL
+}
+
+enum SupportGroupStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum CommunityMeetStatus {
+  UPCOMING
+  COMPLETED
+}
+
+enum PollStatus {
+  ACTIVE
+  SCHEDULED
+  COMPLETED
+}
+
+enum ReportType {
+  PROFILE
+  SUPPORT_DISCUSSION
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+}
+
+enum ContactMessageType {
+  BUG
+  SUGGESTION
+  IDEA
+}
+
+enum ContactMessageStatus {
+  UNREAD
+  READ
+  RESOLVED
+}
+
+enum SubmissionType {
+  MISSING_PIONEER
+  MISSING_PRODUCT
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationStatus {
+  SENT
+  SCHEDULED
+}
+
+enum ActivityType {
+  VERIFICATION
+  CONTACT
+  SUBSCRIPTION
+  REPORT
+  PIONEER
+}
+
+// ----------------------------------------------------
+// MODELS
+// ----------------------------------------------------
+
 model User {
-  id        String     @id @default(cuid())
-  name      String?
-  email     String     @unique
-  password  String
-  role      UserRole   @default(USER)
-  status    UserStatus @default(ACTIVE)
-  avatar    String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id                 String             @id @default(cuid())
+  name               String?
+  email              String             @unique
+  password           String
+  role               UserRole           @default(USER)
+  status             UserStatus         @default(ACTIVE)
+  avatar             String?
+  profileType        ProfileType        @default(ACTIVE_USER)
+  location           String?
+  country            String?
+  region             String?
+  city               String?
+  age                Int?
+  bio                String?
+  bionicLookingFor   String?
+  isBionicProduct    Boolean            @default(false)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  accountStatus      AccountStatus      @default(ACTIVE)
+  suspensionReason   String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  bionicProducts   UserBionicProduct[]
+  masterIndicators MasterIndicator?
+  verifications    Verification[]
+  reports          Report[]
+  submissions      Submission[]
+  pollVotes        PollVote[]
 
   @@map("users")
+  @@index([role, status])
+  @@index([profileType])
+  @@index([verificationStatus])
+  @@index([accountStatus])
+  @@index([createdAt])
+}
+
+model UserBionicProduct {
+  id        String             @id @default(cuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  brand     String
+  category  String
+  status    VerificationStatus @default(PENDING)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@map("user_bionic_products")
+  @@index([userId])
+}
+
+model MasterIndicator {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originOfAmputation String
+  anatomicalBaseline String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("master_indicators")
+}
+
+model Pioneer {
+  id                      String                @id @default(cuid())
+  name                    String
+  initials                String
+  logo                    String?
+  website                 String?
+  location                String?
+  country                 String?
+  region                  String?
+  city                    String?
+  bio                     String?
+  claimedStatus           ClaimedStatus         @default(UNCLAIMED)
+  subscriptionStatus      SubscriptionStatus    @default(NONE)
+  verificationStatus      VerificationStatus    @default(UNVERIFIED)
+  subscriptionPlan        SubscriptionPlanType?
+  subscriptionStartDate   DateTime?
+  subscriptionRenewalDate DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  products      Product[]
+  subscriptions Subscription[]
+
+  @@map("pioneers")
+  @@index([claimedStatus])
+  @@index([subscriptionStatus])
+  @@index([verificationStatus])
+  @@index([createdAt])
+}
+
+model Product {
+  id                   String        @id @default(cuid())
+  pioneerId            String
+  pioneer              Pioneer       @relation(fields: [pioneerId], references: [id], onDelete: Cascade)
+  name                 String
+  limbCategory         LimbCategory
+  productType          ProductType
+  activeUsers          Int           @default(0)
+  status               ProductStatus @default(ACTIVE)
+  description          String?
+  tags                 String[]      @default([])
+  verifiedReviewsCount Int           @default(0)
+  imageUrl             String?
+  videoUrl             String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  verifications Verification[]
+
+  @@map("products")
+  @@index([pioneerId])
+  @@index([limbCategory])
+  @@index([productType])
+  @@index([status])
+}
+
+model Verification {
+  id                 String             @id @default(cuid())
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId          String?
+  product            Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName        String
+  brand              String
+  limb               LimbCategory
+  submissionDate     DateTime           @default(now())
+  status             VerificationStatus @default(PENDING)
+  videoUrl           String?
+  videoDuration      String?
+  unsuccessfulReason String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@map("verifications")
+  @@index([status])
+  @@index([userId])
+  @@index([submissionDate])
+}
+
+model Submission {
+  id            String           @id @default(cuid())
+  type          SubmissionType
+  pioneerName   String
+  productName   String?
+  website       String?
+  submittedById String?
+  submittedBy   User?            @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+  submitterName String?
+  status        SubmissionStatus @default(PENDING)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("submissions")
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Subscription {
+  id          String               @id @default(cuid())
+  pioneerId   String
+  pioneer     Pioneer              @relation(fields: [pioneerId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlanType
+  amount      Float
+  startDate   DateTime             @default(now())
+  renewalDate DateTime
+  status      SubscriptionStatus   @default(ACTIVE)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@map("subscriptions")
+  @@index([pioneerId])
+  @@index([status])
+  @@index([plan])
+}
+
+model SupportGroup {
+  id           String             @id @default(cuid())
+  title        String
+  description  String
+  membersCount Int                @default(0)
+  status       SupportGroupStatus @default(ACTIVE)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@map("support_groups")
+  @@index([status])
+}
+
+model CommunityMeet {
+  id                String              @id @default(cuid())
+  title             String
+  host              String
+  date              String
+  location          String
+  participantsCount Int                 @default(0)
+  status            CommunityMeetStatus @default(UPCOMING)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@map("community_meets")
+  @@index([status])
+}
+
+model Poll {
+  id          String     @id @default(cuid())
+  question    String
+  audience    String     @default("All Users")
+  responses   Int        @default(0)
+  status      PollStatus @default(ACTIVE)
+  createdDate DateTime   @default(now())
+  endDate     DateTime
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  options PollOption[]
+  votes   PollVote[]
+
+  @@map("polls")
+  @@index([status])
+}
+
+model PollOption {
+  id      String @id @default(cuid())
+  pollId  String
+  poll    Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text    String
+  votes   Int    @default(0)
+
+  votesList PollVote[]
+
+  @@map("poll_options")
+  @@index([pollId])
+}
+
+model PollVote {
+  id        String     @id @default(cuid())
+  pollId    String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId  String
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@unique([pollId, userId])
+  @@map("poll_votes")
+}
+
+model Report {
+  id           String       @id @default(cuid())
+  reportedItem String
+  type         ReportType
+  reportedById String?
+  reportedBy   User?        @relation(fields: [reportedById], references: [id], onDelete: SetNull)
+  reporterName String?
+  reason       String
+  status       ReportStatus @default(OPEN)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("reports")
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model ContactMessage {
+  id             String               @id @default(cuid())
+  sender         String
+  email          String
+  type           ContactMessageType
+  messagePreview String
+  fullMessage    String
+  hasAttachment  Boolean              @default(false)
+  attachmentUrl  String?
+  status         ContactMessageStatus @default(UNREAD)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@map("contact_messages")
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model Notification {
+  id          String             @id @default(cuid())
+  title       String
+  description String
+  audience    String             @default("All Users")
+  status      NotificationStatus @default(SENT)
+  scheduledAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@map("notifications")
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id        String       @id @default(cuid())
+  title     String
+  subtitle  String
+  type      ActivityType
+  createdAt DateTime     @default(now())
+
+  @@map("activity_logs")
+  @@index([createdAt])
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("otps")
+  @@index([email, otp])
 }

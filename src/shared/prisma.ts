@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { seedSuperAdmin } from "../app/db/db";
 
 const prisma = new PrismaClient();
 
@@ -8,11 +7,6 @@ async function connectPrisma() {
   try {
     await prisma.$connect();
     console.log("Prisma connected to the database successfully!");
-
-    // Seed super admin
-    seedSuperAdmin().catch((err) => {
-      console.warn("Seeding notice (database may need migration first):", err.message || err);
-    });
   } catch (error) {
     console.error("Prisma connection warning:", error);
   }

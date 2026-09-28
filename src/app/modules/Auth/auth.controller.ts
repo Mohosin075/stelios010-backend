@@ -47,6 +47,39 @@ const changePassword = catchAsync(async (req: Request & { user?: any }, res: Res
   });
 });
 
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.forgotPassword(req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: null,
+  });
+});
+
+const verifyOtp = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.verifyOtp(req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: null,
+  });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.resetPassword(req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: null,
+  });
+});
+
 const getMe = catchAsync(async (req: Request & { user?: any }, res: Response) => {
   const user = req.user;
   const result = await AuthService.getMe(user.id);
@@ -59,9 +92,25 @@ const getMe = catchAsync(async (req: Request & { user?: any }, res: Response) =>
   });
 });
 
+const updateProfile = catchAsync(async (req: Request & { user?: any }, res: Response) => {
+  const user = req.user;
+  const result = await AuthService.updateProfile(user.id, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Profile updated successfully!",
+    data: result,
+  });
+});
+
 export const AuthController = {
   loginUser,
   refreshToken,
   changePassword,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
   getMe,
+  updateProfile,
 };
